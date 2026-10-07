@@ -1,0 +1,21 @@
+{
+  "name": "s11-api-postman",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API de pedidos de cafetería (dominio S10) validada con OpenAPI 3.1 y Postman",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "db:reset": "node server/reset.js",
+    "test:api": "newman run postman/cafeteria.postman_collection.json -e postman/cafeteria.postman_environment.json --reporters cli,json --reporter-json-export evidence/newman-last.json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1"
+  }
+}

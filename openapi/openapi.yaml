@@ -1,0 +1,396 @@
+openapi: 3.1.0
+info:
+  title: Cafetería S11 API
+  version: 1.0.0
+  description: |
+    Pedidos de cafetería reutilizando el dominio de la Semana 10.
+    Dos clientas de prueba (Ana y Luis). Los tokens son fixtures de laboratorio,
+    no secretos reales.
+servers:
+  - url: http://127.0.0.1:3000
+    description: Local
+tags:
+  - name: Auth
+  - name: Products
+  - name: Orders
+  - name: Test
+security: []
+
+paths:
+  /api/test/reset:
+    post:
+      tags: [Test]
+      operationId: resetStore
+      summary: Restaura usuarios, productos y borra pedidos
+      responses:
+        '200':
+          description: Almacén limpio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetResponse'
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Emite el token de fixture de Ana o Luis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              ana:
+                value:
+                  email: ana@cafeteria.test
+                  password: demo-ana
+      responses:
+        '200':
+          description: Sesión de laboratorio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+
+  /api/products:
+    get:
+      tags: [Products]
+      operationId: listProducts
+      summary: Lista productos con paginación
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Página de productos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          $ref: '#/components/responses/Error'
+
+  /api/products/{id}:
+    get:
+      tags: [Products]
+      operationId: getProduct
+      summary: Consulta un producto
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Producto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /api/orders:
+    get:
+      tags: [Orders]
+      operationId: listOrders
+      summary: Lista los pedidos de la persona autenticada
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Página de pedidos propios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPage'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [Orders]
+      operationId: createOrder
+      summary: Crea un pedido propio
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            examples:
+              americano:
+                value:
+                  items:
+                    - productId: 1
+                      quantity: 1
+      responses:
+        '201':
+          description: Pedido confirmado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /api/orders/{id}:
+    get:
+      tags: [Orders]
+      operationId: getOrder
+      summary: Consulta un pedido propio
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Pedido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /api/orders/{id}/cancel:
+    put:
+      tags: [Orders]
+      operationId: cancelOrder
+      summary: Cancela un pedido propio. Es idempotente en el efecto (estado y stock).
+      description: |
+        La primera llamada pasa el pedido a cancelled y devuelve el stock.
+        Las siguientes responden 200 con el mismo estado cancelled y no vuelven
+        a alterar existencias. No se usa un encabezado de idempotencia.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Pedido cancelado (primera vez o repetición)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelResponse'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: fixture
+      description: Tokens de laboratorio demo-token-ana y demo-token-luis
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    pageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 10
+  responses:
+    Error:
+      description: Error de contrato
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error, code]
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          type: object
+          required: [id, name, email, role]
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            email:
+              type: string
+            role:
+              type: string
+              enum: [customer]
+    Product:
+      type: object
+      required: [id, name, priceCents, stock]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        priceCents:
+          type: integer
+        stock:
+          type: integer
+    ProductPage:
+      type: object
+      required: [items, page, pageSize, total, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+    OrderItem:
+      type: object
+      required: [productId, name, quantity, unitPriceCents, subtotalCents]
+      properties:
+        productId:
+          type: integer
+        name:
+          type: string
+        quantity:
+          type: integer
+        unitPriceCents:
+          type: integer
+        subtotalCents:
+          type: integer
+    Order:
+      type: object
+      required: [id, userId, code, totalCents, status, createdAt, items]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        code:
+          type: string
+        totalCents: 
+          type: integer
+          description: Siempre número. Un string aquí rompe el contrato.
+        status:
+          type: string
+          enum: [confirmed, cancelled]
+        createdAt:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    OrderPage:
+      type: object
+      required: [items, page, pageSize, total, totalPages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+    CreateOrderRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [productId, quantity]
+            properties:
+              productId:
+                type: integer
+                minimum: 1
+              quantity:
+                type: integer
+                minimum: 1
+    CancelResponse:
+      type: object
+      required: [order, repeated]
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        repeated:
+          type: boolean
+    ResetResponse:
+      type: object
+      required: [ok, orders]
+      properties:
+        ok:
+          type: boolean
+        orders:
+          type: integer
+        users:
+          type: integer
+        products:
+          type: integer

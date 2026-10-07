@@ -1,0 +1,149 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+(node:36233) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead
+(Use `node --trace-deprecation ...` to show where the warning was created)
+newman
+
+S11 Cafetería API
+
+→ [SETUP-01] Reiniciar datos
+  POST http://127.0.0.1:3000/api/test/reset [200 OK, 280B, 14ms]
+  ✓  SETUP-01 reset 200
+
+→ [AUTH-01] Login válido de Ana
+  POST http://127.0.0.1:3000/api/auth/login [200 OK, 338B, 7ms]
+  ✓  AUTH-01 status 200
+  ✓  AUTH-01 token y usuaria
+
+→ [AUTH-02] Credenciales inválidas
+  POST http://127.0.0.1:3000/api/auth/login [401 Unauthorized, 310B, 1ms]
+  ✓  AUTH-02 status 401
+  ✓  AUTH-02 code INVALID_CREDENTIALS
+  ✓  esquema Error (error y code string)
+
+→ [AUTH-03] Sin credenciales
+  GET http://127.0.0.1:3000/api/orders/1 [401 Unauthorized, 312B, 0µs]
+  ✓  AUTH-03 status 401
+  ✓  AUTH-03 code MISSING_TOKEN
+  ✓  esquema Error (error y code string)
+
+→ [AUTH-04] Token inválido
+  GET http://127.0.0.1:3000/api/orders/1 [401 Unauthorized, 303B, 1ms]
+  ✓  AUTH-04 status 401
+  ✓  AUTH-04 code INVALID_TOKEN
+  ✓  esquema Error (error y code string)
+
+→ [ORD-01] Crear pedido válido
+  POST http://127.0.0.1:3000/api/orders [201 Created, 462B, 1ms]
+  ✓  ORD-01 status 201
+  1. ORD-01 negocio confirmado
+
+→ [ORD-02] Verificar pedido y stock
+  GET http://127.0.0.1:3000/api/orders/1 [200 OK, 457B, 1ms]
+  ✓  ORD-02 status 200
+  2. ORD-02 persistió el create
+  GET http://127.0.0.1:3000/api/products/1 [200 OK, 297B, 1ms]
+  ✓  ORD-02 stock Americano bajó a 19
+
+→ [ORD-03] Pedido vacío
+  POST http://127.0.0.1:3000/api/orders [400 Bad Request, 309B, 0µs]
+  ✓  ORD-03 status 400
+  ✓  ORD-03 code EMPTY_ORDER
+  ✓  esquema Error (error y code string)
+
+→ [ORD-04] Falta items
+  POST http://127.0.0.1:3000/api/orders [400 Bad Request, 309B, 1ms]
+  ✓  ORD-04 status 400
+  ✓  ORD-04 code EMPTY_ORDER
+  ✓  esquema Error (error y code string)
+
+→ [ORD-05] Pedido inexistente
+  GET http://127.0.0.1:3000/api/orders/99999 [404 Not Found, 304B, 1ms]
+  ✓  ORD-05 status 404
+  ✓  ORD-05 code ORDER_NOT_FOUND
+  ✓  esquema Error (error y code string)
+
+→ [AUTH-05] Login de Luis
+  POST http://127.0.0.1:3000/api/auth/login [200 OK, 341B, 1ms]
+  ✓  AUTH-05 Luis 200
+
+→ [ORD-06] Recurso ajeno
+  GET http://127.0.0.1:3000/api/orders/1 [403 Forbidden, 303B, 1ms]
+  ✓  ORD-06 status 403
+  ✓  ORD-06 code FORBIDDEN
+  ✓  esquema Error (error y code string)
+
+→ [PAG-01] Productos página 1
+  GET http://127.0.0.1:3000/api/products?page=1&pageSize=2 [200 OK, 415B, 1ms]
+  ✓  PAG-01 status 200
+  ✓  PAG-01 corte de página
+
+→ [PAG-02] Productos página 2
+  GET http://127.0.0.1:3000/api/products?page=2&pageSize=2 [200 OK, 413B, 1ms]
+  ✓  PAG-02 status 200
+  ✓  PAG-02 no repite la página 1
+
+→ [CAN-01] Cancelar pedido
+  PUT http://127.0.0.1:3000/api/orders/1/cancel [200 OK, 484B, 1ms]
+  ✓  CAN-01 status 200
+  ✓  CAN-01 primera cancelación
+  GET http://127.0.0.1:3000/api/products/1 [200 OK, 297B, 0µs]
+  ✓  CAN-01 stock volvió a 20
+
+→ [CAN-02] Repetir cancelación (efecto)
+  PUT http://127.0.0.1:3000/api/orders/1/cancel [200 OK, 483B, 1ms]
+  ✓  CAN-02 status 200
+  3. CAN-02 no altera otra vez
+  GET http://127.0.0.1:3000/api/products/1 [200 OK, 297B, 1ms]
+  ✓  CAN-02 stock sigue en 20
+
+→ [SCH-01] Esquema de éxito OpenAPI
+  GET http://127.0.0.1:3000/api/orders/1 [200 OK, 457B, 1ms]
+  ✓  SCH-01 status 200
+  4. SCH-01 tipos del Order
+
+→ [SCH-02] Esquema de error OpenAPI
+  POST http://127.0.0.1:3000/api/auth/login [401 Unauthorized, 310B, 1ms]
+  ✓  SCH-02 status 401
+  ✓  SCH-02 Error required fields
+
+┌─────────────────────────┬─────────────────┬─────────────────┐
+│                         │        executed │          failed │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              iterations │               1 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│                requests │              21 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│            test-scripts │              18 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│      prerequest-scripts │               0 │               0 │
+├─────────────────────────┼─────────────────┼─────────────────┤
+│              assertions │              44 │               4 │
+├─────────────────────────┴─────────────────┴─────────────────┤
+│ total run duration: 223ms                                   │
+├─────────────────────────────────────────────────────────────┤
+│ total data received: 2.46kB (approx)                        │
+├─────────────────────────────────────────────────────────────┤
+│ average response time: 2ms [min: 1ms, max: 14ms, s.d.: 3ms] │
+└─────────────────────────────────────────────────────────────┘
+
+  #  failure         detail                                         
+                                                                    
+ 1.  AssertionError  ORD-01 negocio confirmado                      
+                     expected '3500' to deeply equal 3500           
+                     at assertion:1 in test-script                  
+                     inside "[ORD-01] Crear pedido válido"          
+                                                                    
+ 2.  AssertionError  ORD-02 persistió el create                     
+                     expected '3500' to deeply equal 3500           
+                     at assertion:1 in test-script                  
+                     inside "[ORD-02] Verificar pedido y stock"     
+                                                                    
+ 3.  AssertionError  CAN-02 no altera otra vez                      
+                     expected '3500' to deeply equal 3500           
+                     at assertion:1 in test-script                  
+                     inside "[CAN-02] Repetir cancelación (efecto)" 
+                                                                    
+ 4.  AssertionError  SCH-01 tipos del Order                         
+                     expected '3500' to be a number                 
+                     at assertion:1 in test-script                  
+                     inside "[SCH-01] Esquema de éxito OpenAPI"     
